@@ -1,0 +1,605 @@
+% $Id: jfesample.tex,v 19:a118fd22993e 2013/05/24 04:57:55 stanton $
+\documentclass[12pt]{article}
+
+% DEFAULT PACKAGE SETUP
+
+\usepackage{setspace,graphicx,epstopdf,amsmath,amsfonts,amssymb,amsthm,versionPO}
+\usepackage{marginnote,datetime,enumitem,subfigure,rotating,fancyvrb,longtable}
+\usepackage{hyperref,float}
+\usepackage[longnamesfirst]{natbib}
+\usdate
+
+% These next lines allow including or excluding different versions of text
+% using versionPO.sty
+
+\excludeversion{notes}		% Include notes?
+\includeversion{links}          % Turn hyperlinks on?
+
+% Turn off hyperlinking if links is excluded
+\iflinks{}{\hypersetup{draft=true}}
+
+% Just turn off hyperlinking full stop
+\hypersetup{hidelinks}
+
+% Notes options
+\ifnotes{%
+\usepackage[margin=1in,paperwidth=10in,right=2.5in]{geometry}%
+\usepackage[textwidth=1.4in,shadow,colorinlistoftodos]{todonotes}%
+}{%
+\usepackage[margin=1in]{geometry}%
+\usepackage[disable]{todonotes}%
+}
+
+% Allow todonotes inside footnotes without blowing up LaTeX
+% Next command works but now notes can overlap. Instead, we'll define 
+% a special footnote note command that performs this redefinition.
+%\renewcommand{\marginpar}{\marginnote}%
+
+% Save original definition of \marginpar
+\let\oldmarginpar\marginpar
+
+% Workaround for todonotes problem with natbib (To Do list title comes out wrong)
+\makeatletter\let\chapter\@undefined\makeatother % Undefine \chapter for todonotes
+
+% Define note commands
+\newcommand{\smalltodo}[2][] {\todo[caption={#2}, size=\scriptsize, fancyline, #1] {\begin{spacing}{.5}#2\end{spacing}}}
+\newcommand{\rhs}[2][]{\smalltodo[color=green!30,#1]{{\bf RS:} #2}}
+\newcommand{\rhsnolist}[2][]{\smalltodo[nolist,color=green!30,#1]{{\bf RS:} #2}}
+\newcommand{\rhsfn}[2][]{%  To be used in footnotes (and in floats)
+\renewcommand{\marginpar}{\marginnote}%
+\smalltodo[color=green!30,#1]{{\bf RS:} #2}%
+\renewcommand{\marginpar}{\oldmarginpar}}
+%\newcommand{\textnote}[1]{\ifnotes{{\noindent\color{red}#1}}{}}
+\newcommand{\textnote}[1]{\ifnotes{{\colorbox{yellow}{{\color{red}#1}}}}{}}
+
+% Command to start a new page, starting on odd-numbered page if twoside option 
+% is selected above
+\newcommand{\clearRHS}{\clearpage\thispagestyle{empty}\cleardoublepage\thispagestyle{plain}}
+
+% Number paragraphs and subparagraphs and include them in TOC
+\setcounter{tocdepth}{2}
+
+% JFE-specific includes:
+
+\usepackage{indentfirst} % Indent first sentence of a new section.
+\usepackage{jfe}          % JFE-specific formatting of sections, etc.
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{assumption}{Assumption}[section]
+\newtheorem{proposition}{Proposition}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}
+\newtheorem{condition}{Condition}
+
+\begin{document}
+
+\setlist{noitemsep}  % Reduce space between list items (itemize, enumerate, etc.)
+%\onehalfspacing      % Use 1.5 spacing
+% Use endnotes instead of footnotes - redefine \footnote command
+
+\title{Data matching for corporate governance research\footnotetext{School of Banking and Finance, UNSW Business School, E-mail: attila.balogh@unsw.edu.au. I gratefully acknowledge support through the Australian Government Research Training Program Scholarship.}}
+
+\author{Attila Balogh}
+
+\date{}             % No date for final submission
+
+% Create title page with no page number
+
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+
+\singlespacing
+
+\maketitle
+
+\vspace{-.2in}
+\begin{abstract}
+\noindent Matching observations across multiple datasets for corporate governance research carries with it some well-known and other less known challenges.
+This paper highlights best practices for carrying out linking across databases extensively used in corporate governance research.
+A companion repository of the associated code and the final matched dataset are made available to assist researchers in consistently applying the discussed techniques.
+\end{abstract}
+
+\medskip
+
+\noindent \textit{JEL classification}: M41, G30, G32.
+
+\medskip
+\noindent \textit{Keywords}: dataset matching, corporate governance, BoardEx, CRSP, Compustat.
+\begin{center}
+\noindent \textit{
+\\
+This version: \date{\today}\\
+\medskip
+\medskip
+Working Paper \\
+}
+\end{center}
+\thispagestyle{empty}
+
+\clearpage
+
+\onehalfspacing
+\setcounter{footnote}{0}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+\setcounter{page}{1}
+
+\noindent
+This paper provides guidance on the appropriate linking of the BoardEx database to the Compustat, CRSP, and SDC Platinum databases.
+%The paper assumes basic knowledge of the SAS 9.4 platform and working access to the Compustat Monthly Updates - Fundamentals Annual dataset, BoardEx and CRSP via WRDS.
+%The starting point of the companion code requires that the user has a dataset containing the list of Company identifiers (\textit{CompanyID}) and Data Year -- Fiscal (\textit{FYEAR}) combinations that will be uploaded to WRDS for the required accounting variables to be obtained.
+
+The online companion to this paper with the associated SAS code and the final matched dataset are maintained and made available; with the respective links provided in the appendix.
+
+%\section{Copy / Paste} \label{sec:Matcihng}
+%It is possible that a BoardID is matched to multiple GVKEYs.
+%Further, it is also possible that there are duplicates resulting from BoardIDs matched to multiple CRSP PERMNOs.
+%The BCM\_Link dataset does not make an explicit decision about handling these overlaps.
+%The LinkType field indicates the source(s) of the match, allowing
+
+\section{Matching Steps} \label{sec:Matching}
+
+In the BoardEx North American database, the company names (na\_wrds\_company\_names) and company profile (na\_wrds\_company\_profile) datasets contain the required $BoardID$, $ISIN$ , and $CIKCode$ variables.
+These two datasets, however, are not comprehensive and there are observations in many of the other 40 datasets that relate to firms identified with BoardID that is not listed in the company names or profiles datasets.
+The Director Employment Profile (Na\_dir\_profile\_emp) dataset with director appointment observations is one such example.
+It contains company identifiers and names without corresponding entries in the company profile and company names databases.
+
+Overlooking these firms may lead to researchers removing director profile entries without matching firm profiles during an early filtering stage.
+Given that these entries can still be linked to Compustat and CRSP manually, this approach may lead to missed matching opportunities.
+%A better approach is to restrict each join step to non-missing entries on the matching variable.
+%A potential implementation is to include a \texttt{(where=(not missing(COMP\_Cusip)))} filter in the \texttt{proc sql} step that matches on the CUSIP identifier.
+
+The sample code on GitHub provides additional sorting and filtering along individual steps to allow the researcher a visual inspection of the data.
+While the benefit of programmatic matches is considerable, the importance of developing an in-depth understanding of the sample in the study cannot be overstated.
+%Research findings come form insight 
+
+This paper is structured as follows.
+Section~\ref{sec:ISINCUSIP} provides an introduction to the ISIN and CUSIP identifiers, Section~\ref{sec:BoardexCOMP} describes matching to the Compustat Gvkey identifier, and Section~\ref{sec:BoardexCRSP} develops a method for linking BoardID to the CRSP Permno identifier.
+This section also also extends the well-known method of CRSP/Compustat matching to extend the BoardID link from Permno to Gvkey.
+Section~\ref{sec:manual} explores effective approaches to manual matching, and Section~\ref{sec:years} provides insights into the role of observation years through a brief case study.
+Section~\ref{sec:Conclusions} concludes.
+
+
+\section{ISIN and CUSIP}\label{sec:ISINCUSIP}
+
+The International Securities Identification Number ($ISIN$) is an alpha numeric code comprising of 12 characters.
+The first two characters of the code are letters and denote the country of the security.
+It is followed by nine alphanumeric characters; a combination of letters and numbers, and ends with a final checksum digit, the 12th character.
+
+The Committee on Uniform Security Identification Purposes ($CUSIP$), is predominantly used in the United States and contains nine characters.
+The first six characters identify the issuer of the security, whereas the following two characters identify the issue.
+The $CUSIP$ also includes a check digit, the last character.
+
+The CUSIP is a subset of the ISIN code; it is the nine alphanumeric character string that is encapsulated by the country code and final ISIN checksum.
+Accordingly, CUSIP can be derived by removing the leading country designation and the trailing check digit from the ISIN code.
+
+The CUSIP, in turn, also includes various internal components, a structure that results in different CUSIP implementations and definitions across databases. 
+In particular, six-digit CUSIPs denote company specific securities, while eight-digit CUSIPs identify issue specific securities.
+Lastly, nine-digit identifiers include a check digit in addition to the issue-specific CUSIP.
+Where only six-digit CUSIPs are available, such as in the SDC dataset, the eight-digit version can be created by adding the '10' string, which always denotes the original security offering by the firm.
+
+
+\subsection{Identifying CUSIP in BoardEx}\label{sec:BECUSIP}
+
+A typical starting point for a merging exercise is a dataset that includes company identifiers from the BoardEx database and time periods for which a match is sought.
+
+In this step, the original dataset is taken, perhaps from the Director Appointments dataset, which contains Company ID, Company Name, as well as one observation for each of the years between the start and end dates for the periods that need matching.
+This approach is discussed in detail in Section~\ref{sec:years}.
+This dataset is then joined on BoardID, which is the the equivalent of CompanyID, from the Company Profiles dataset.
+Additional variables obtained from this second dataset are the ISIN code; CIK Code, and potentially the ticker symbol.
+
+Given that the Compustat CUSIP variable is a nine-digit identifier, the BoardEX ISIN needs to be trimmed by removing the leading two characters and the trailing two alphanumeric characters.
+This variable is named COMP\_Cusip to denote that it will be used for matching to the Compustat (COMP) database.
+
+By contrast, the CRSP CUSIP variable is an eight-digit identifier, and hence the BoardEX ISIN variable needs to be trimmed by removing the leading two characters and the trailing three alphanumeric characters.
+This new variable is identified as CRSP\_Cusip.
+
+It is worth noting that the BoardEx Company Profiles dataset contains multiple entries for each firm.
+This occurs partially because multiple advisors may be listed under the AdvisorName and AdvTypeDesc variables.
+A brief inspection of Apple Inc (BoardID 2355) provides evidence of this phenomenon.
+
+\begin{center}
+\input{x_2355.tex}
+\end{center}
+
+In addition, companies may have multiple ISIN codes associated with them, as with LegacyTexas Bank (BoardID 872265).
+
+\begin{center}
+\input{x_872265.tex}
+\end{center}
+
+Conversely, many firms in the BoardEx dataset will not be associated with either a ticker symbol, ISIN numbers or CIK Codes.
+In fact, merging all 40 datasets for the BoardEx North American product yields well over 700,000 entries, whereas the Company Profiles and Company Names datasets contain under 14,000 unique entries with a non-missing ISIN, CIK Code, or ticker symbol.
+
+Many of the missing identifiers seem to relate to foreign firms, such as Ipsos SA (CompanyID 16966), the market research firm listed on the Euronext.
+
+Other firm-year observations will provide a BoardID match to CompanyID, but will fail in providing an identifier.
+An example is Infinity Broadcasting Corporation (CompanyID and BoardID: 15917), which was listed in 1986, de-listed in 1988, and listed again in 1992 and de-listed in 2001.
+
+\begin{center}
+\input{x_15917.tex}
+\end{center}
+
+Because the only three identifiers available in BoardEx are ISIN, CIK Code and Ticker, CompanyID observations that cannot be matched to the company profile dataset provided by BoardEx will be challenging to match methodically.
+Predominantly manual matching based on company name is the researcher's only option for these observations, an approach discussed in Section~\ref{sec:manual}.
+
+As at Novermber 2017, the starting dataset includes approximately 13,600 entries; unique observations from the combined Company Profiles and Company Names dataset with non-missing ISIN, CIK Code or ticker symbols.
+
+In the first steps, all instances of the same firm with multiple identifiers (either ISIN, CIK Code or ticker) are kept to ensure that maximum likelihood of finding an appropriate Compustat or CRSP identifier match.
+
+%Observations that were not matched at this stage will need to be removed.
+%Somewhat surprisingly, the BoardEx North America dataset has firm level data for companies identified by CompanyID that do not have corresponding profile information with a valid BoardID.
+%Additional methods to locate company identifiers will be discussed later.
+
+\section{BoardEx Matching to Compustat}\label{sec:BoardexCOMP}
+
+\subsection{CUSIP Linking}\label{sec:CUSIPmatch}
+
+The next step involves direct matching of the resulting CUSIP codes utilizing the Compustat Company Names (comp.names) dataset.
+For specific input files (unlike ours seeking a match to all Board identifiers), the researcher needs to ensure that a match is only applied for firm-year observations in the years where the Compustat Names dataset specifically confirms coverage.
+
+The BoardEx North American dataset contains Canadian firms as well as firms listed in the United States.
+If the original BoardEx input dataset did not filter for firms listed in the US, this matching step will return numerous missing matches.
+A brief visual inspection can reveal whether the non-matched entries bear the 'CA' designation in the ISIN, indicating that the firm is listed in Canada.
+
+There will also be duplicates in the dataset, where one BoardID is matched to multiple Gvkeys.
+This is expected behavior when companies experience reorganization, such as Prologis Inc (Board ID 1710) that was called AMB Property Inc prior to 2011.
+The company's CIK Code remained the same, but both its ISIN and ticker symbols changed, as did its GVKEY in Compustat.
+
+\begin{center}
+\input{x_1710.tex}
+\end{center}
+
+As at November 2017, this affects 41 firms of the 7,476 unique matches.
+
+Nevertheless, there may be US-listed firms that remain unmatched in this dataset that may have corresponding entries in Compustat.
+They will be matched in subsequent stages using alternative identifiers.
+
+Entries matched in this case are identified by the LinkType 'LC' to denote successful CUSIP linking to Compustat.
+
+\subsection{CIK Code Linking}\label{sec:CIKmatch}
+
+In addition to CUSIP, BoardEx company profiles may also list the CIK Code for many firms: as at Novermber 2017, the North American dataset includes 11,867 unique entries in total.
+CIK is the abbreviation for Central Index Key, and it may identify individuals as well as firms.
+It is the main identifier in the EDGAR database, the SEC's Electronic Data Gathering, Analysis, and Retrieval system.
+
+A visual inspection of the CIK variable in BoardEx reveals that the length of the identifier is shorter than the prescribed ten digits for many observations.
+This is easily managed by filling the missing digits by leading zeros in the dataset.
+
+Here, and in all subsequent stages, matching is carried out on the original dataset instead of the subset of observations that remain unmatched.
+This strategy will later allow to assess the strength of the match based on the number of approaches that resulted in a successful merge.
+
+This matching step also yields duplicates.
+Whereas in the CUSIP matching step a single board identifier was associated with multiple company keys; here a single key may be matched to multiple BoardEx entries.
+As at November 2017, 8,895 of the unique matches cover 9,297 Board identifiers.
+This phenomenon may stem from coding inconsistencies in the BoardEx database, where the same entry is assigned multiple identifiers.
+A prominent example is American Airlines (GVKEY 001045), listed under BoardEx IDs 2107, 1748237, and 2021732.
+This example highlights the importance of the filling up the missing leading digits for the CIK Code, which is originally recorded by BoardEx across the three observations as 6201, 06201 and finally 0000006201.
+%Another such instance is American Greetings Corp (GVKEY 001468) that is featured under Board identifiers 1833 and 1972036.
+
+\begin{center}
+\input{x_001045.tex}
+\end{center}
+
+Entries matched in this case are identified by the LinkType 'LK' to denote successful CIK Code linking to Compustat.
+
+\begin{comment}
+\subsection{Ticker Symbol Linking}\label{sec:TICmatch}
+
+The third matching stage involves the same process as before and employs the original dataset for linking.
+The company's ticker symbol is the third and last available identifier that can be matched between the BoardEx and Compustat databases.
+As before, care is taken that ticker symbols are matched for the specific year, as it is customary for tickers to be reused and recycled over time.
+
+Entries matched in this case are identified by the $Match\_TIC$ dummy to note successful identification.
+The code includes methods to obtain summary statistics to inspect the success of a matching stage for each merging strategy.
+\end{comment}
+
+\section{BoardEx Matching to CRSP}\label{sec:BoardexCRSP}
+
+\subsection{CUSIP Linking}\label{sec:CRSPCUSIPmatch}
+
+Having created the nine-digit CUSIP variable from the BoardEx ISIN, the next step involves the process of matching CUSIPs to a CRSP PERMNO, prior to matching the resulting PERMNO to Compustat's GVKEY.
+
+In this setting, the appropriate matching is to the PERMNO variable in CRSP, as it identifies the issue, whereas PERMCO identifies the company.
+Accordingly, PERMCO is the larger set and may include multiple PERMNOs, whereas one PERMNO can only belong to one PERMCO.
+
+For the PERMNO matching, the appropriate dataset is the CRSP Daily Stock Event Name History (dsenames).
+In this matching, note that the CRSP dataset uses an eight-digit CUSIP vis-\`{a}-vis the nine-digit identifier in BoardEx originally obtained in Section~\ref{sec:ISINCUSIP}.
+
+The CUSIP identifier may change over time when the name of the company or its capital structure changes.
+In the CRSP databases CUSIP Header denotes the current CUSIP for each firm, and historical CUSIP is kept in the crsp.dsenames dataset with corresponding time intervals.
+This historical CUSIP (NCUSIP) variable is missing for firm years prior to 1968; that is when the American Bankers Association set up the CUSIP Service Bureau through its Committee on Uniform Security Identification Procedures (CUSIP).
+
+
+%This dataset also includes a ticker symbol that may be used for an additional matching step.
+%The two matches have now yielded two datasets that matches BoardEx data to CRSP's PERMCO identifier.
+%The next step is to match this identifier to Compustat's GVKEY.
+
+It is important to note that the original CCM Linktable linking dataset provided by WRDS (ccmxpf\_linktable) has now been deprecated.
+While it continues to be available, the appropriate database to use is the CCM Xpressfeed Linking History (ccmxpf\_lnkhist) dataset provided by CRSP.
+
+
+\section{SDC Matching}\label{sec:SDC}
+
+As described earlier, Thomson Reuters products, such as the SDC Mergers and Acquisitions database use the six-digit CUSIP code that denotes issuers, not specific issues.
+The nine-digit CUSIPs in the Compustat Names dataset provides a true one-to-one match between GVKEY and CUSIP, without duplicates.
+In matching the six-digit SDC CUSIP code to GVKEY, however, researchers will note that a number of six-digit (issuer) CUSIPs will be mapped to multiple GVKEY identifiers.
+Issuers with more than two matches are typically exchange traded funds, such as iShares or Pimco, some of which are associated with 20-40 unique GVKEYs.
+Those with two or three associated GVKEYs are often firms with a listed subsidiary, such as GM Financial in the below example.
+The new firm was assigned individual GVKEY, ticker symbol, CIK Code and CUSIP, but the latter originates from the parent company's six digit core CUSIP.
+
+\begin{center}
+\input{x_37045V.tex}
+\end{center}
+
+At times, firms undergo a name change or restructuring in their capital structure that warrants a new issue level identifier (CUSIP alphanumeric positions 7 and 8), but not a change in the fundamental issuer-level CUSIP.
+
+The story of Petrohawk Energy is told by the CRSP and Compustat index files and 10-K submissions, with the help of the Wayback Machine\footnote{https://web.archive.org/web/20060821205016/http://www.petrohawk.com/news/}.
+The company started life as Beta Oil \& Gas, and in December 2003 it announced having entered into an agreement to issue new shares to Petrohawk Energy, LLC for \$60,000,000.
+This transaction was going to result in a change of control and constituted a reverse merger under NASDAQ rules.
+The transaction was completed on May 25, 2004, the company's common stock began trading the following day.
+A new CUSIP was issued within the range of its original issuer CUSIP.
+
+The company was first classified by NAICS under crude petroleum and natural gas extraction on June 10, 2004.
+Presumably this is the event that triggered the additional entry. 
+On June 24, 2004, the company announced the date for its annual meeting and the proposed name change to Petrohawk Energy Corporation.
+On July 15, 2004, the annual meeting was held; shareholders approved the name change and reincorporating the company in Delaware.
+Finally in 2007, the company changed its ticker symbol from HAWK to HK.
+
+\begin{center}
+\input{x_87054.tex}
+\end{center}
+
+Returning to the primary exercise of matching a six-digit CUSIP to a GVKEY, the challenge is illustrated by the final chapter in the Petrohawk Energy story.
+On July 15, 2001, BHP Billiton and Petrohawk Energy announced a merger agreement, which was formally concluded when Petrohawk filed a Form 8-K on August 26 with a notice of delisting.
+
+Subsequently, Petrohawk was issued a new CUSIP under the BHP trunk of 088606xxx, and Compustat's records only show evidence of this final CUSIP.
+This example introduces the concept of header and 
+
+\begin{center}
+\input{x_088606.tex}
+\end{center}
+
+
+
+
+%COMMENT
+\begin{comment}
+
+\subsection{CRSP/Compustat Linking}\label{sec:CCM}
+
+The primary role of the Compustat CRSP Matching (CCM) dataset is to provide a link between financial statement and security prices data.
+Accordingly, the CCM linking history file provides information on the start and end dates for which a certain GVKEY has a corresponding PERMNO and PERMCO identifier.
+In the specific case when the primary goal is to identify a GVKEY to match financial data to the BoardEx database, some of the restrictions of the CCM design may be relaxed.
+Using the CCM dataset to match GVKEY effectively, the start and end dates for the effective Compustat-CRSP link are less relevant.
+
+The CCM reverse lookup technique incorporates four distinct approaches.
+The first will employ BoardEX CUSIP in first matching to a CRSP PERMNO, which will in turn be matched to a GVKEY based on the validity interval provided by CCM Linkhist.
+
+When a GVKEY match is identified for a PERMNO for a given period, the search may be extended on the comp.names dataset to test whether the identified GVKEY is valid for a period outside the Compustat-CRSP effective dates.
+This will me the second method, and the number of matches will vary.
+
+Overall, the second approach is considered more robust and will be assigned higher priority, because the comp.names interval dates refer to data that is specific to Compustat.
+By contrast, interval dates in CCM Linkhist refer to matches between PERMCO / GVKEY associations, which is more indirect.
+
+The third and fourth matching steps will be analogous to the first two, but employ the firm's ticker symbol in the matching steps.
+As before, higher priority will be assigned to the the fourth step in favour of the third.
+
+An example where the matching on CRSP dates gives an additional year is AT\&T Wireless Services.
+The CRSP dates span from July 9, 1997 to June 9, 2004, whereas the Compustat dates are between 1997 and 2003.
+An illustration is available in the \texttt{Example\_AWE.sas} file.
+
+A practical example of the second approach generating more matches is the case of the Piper Jaffray Companies, where the CCM link is valid from January 2, 2004, but the matching step that identifies the GVKEY for the firm is listed in comp.names with financial data starting from 1974.
+An illustration of the resulting match that misses key firm-year matches is provided in the \texttt{Example\_PJC.sas} file.
+
+Prior to mechanically undertaking this step, it is useful to understand the role of primary issue markers.
+The $LINKPRIM$ variable in the dataset can either denote primary or secondary markers.
+In this field, \textit{'P'} is the primary marker; \textit{'J'} marks a secondary issue; \textit{'C'} is assigned by CRSP to resolve overlapping or missing primary markers, and \textit{'N'} is an overriding entry.
+The \textit{N} marker distinguishes US and Canadian securities that Compustat would otherwise identify by the same GVKEY.
+
+
+Centerpoint Energy is a case in point when matched on ticker symbol to Compustat via CRSP in this process.
+With a sample period of interest between 1974 and 2002, matching based on the CCM Linkhist information yields one GVKEY-year observation for 2002 and a different GVKEY-year match for the period between 1980 and 2001.
+This latter GVKEY changes between being a primary vs overlapping marker and first vs second firm-level security with no particular pattern.
+Closer inspection of the data reveals that the GVKEY to PERMCO link that is only valid between Janury 1, 2002 and June 9, 2004 based on CCM Linkhist, is in fact the primary GVKEY since January 31, 1962.
+This finding motivates the subsequent step to create a match with higher priority that employs the GVKEY validity period.
+These matching steps for the example firm are available in the \texttt{Example\_CNP.sas} file.
+
+
+
+
+In order to ensure that only one of the observations are kept, I assign a preference number to each type of marker for observations denoted \textit{'P'} taking the highest value of 4.
+The observations are then sorted on CompanyID and TYEAR in ascending order and on this preference number (\textit{LPID}) in descending order.
+Next, SAS is instructed to remove duplicates of CompanyID and TYEAR pairs.
+Given the reverse sorting on LPID, observations with \textit{'P'} will be kept over observations with any of the other other markers.
+
+\footnote{\url{https://wrds-web.wharton.upenn.edu/wrds/tools/variable.cfm?library_id=137&file_id=66980}}
+
+
+\end{comment}
+
+\section{Manual Matching}\label{sec:manual}
+
+\section{The Role of Observation Years}\label{sec:years}
+
+\begin{comment}
+
+
+A particular problem in matching arises in relation to the date of the observation, which needs to be handled prior to merging datasets across different sources.
+Since the BoardEx identifier CUSIP represents an issued security, it could potentially be matched to multiple Compustat identifier GVKEYs over time.
+In addition, companies change names, merge, or become acquired, which may all lead to changes in names and identifiers.
+
+A practical example of the challenge is examining the financial performance of Knight Therapeutics Inc (BoardID: 746836) during the time that Major Jonathan Goodman (DirectorID: 1097153) was Chairman of the board between May 29, 2012 and February 28, 2014.
+The matching method described in Section~\ref{sec:CUSIPmatch} yields two instances of Knight Therapeutics in both the boardex.na\_wrds\_company\_profile and the comp.names datasets
+A closer inspection of the comp.names datasets is achieved by filtering on the two CUSIPs listed for the firm in BoardEx (695942102 and 499053106).
+It reveals that the two CUSIPs are associated with two distinct GVKEY entries: the former belongs to Paladin Labs and the latter to Knight Therapeutics. 
+The $year1$ and $year2$ variables in the comp.names dataset reveals that the Paladin Labs GVKEY is applicable for the period between 1997 and 2012.
+The Knight Therapeutics GVKEY, in turn, is the relevant firm to consider for the period between 2013 and 2016.
+
+It is worth noting that this finding may be inconsistent with the $CompanyName$ field in BoardEx that identifies the company as KNIGHT THERAPEUTICS INC (Paladin Labs Inc prior to 03/2014).
+As it has been shown, the change in CUSIP and GVKEY took place from 2012 to 2013.
+
+Having established this potential challenge, the prerequisite step for matching is to start with a dataset that does not only include the CUSIP of interest (derived from the BoardEx ISIN field), but also the date ranges for which a Compustat GVKEY (or later CRSP PERMNO) match is sought.
+The procedure will be illustrated with the Knight Therapeutics example.
+First, director profiles are obtained from the Boardex.na\_dir\_profile\_emp dataset for Major Jonathan Goodman.
+An abridged version of the resulting dataset is shown in Table~\ref{table:table-years1}.
+
+\begin{table}[h]
+\centering
+\caption{Director profile for Major Jonathan Goodman}
+\label{table:table-years1}
+\begin{tabular}{r r r r r r}
+&&&&&\\
+
+DirectorID	&CompanyID	&DateStartRole	&DateEndRole	&BrdPosition	&NED\\ \hline
+1097153	&746836	&1/01/1983	&18/08/2011	&No	&No\\
+1097153	&746836	&29/05/2012	&28/02/2014	&Yes	&No\\
+1097153	&746836	&28/02/2014	&31/08/2016	&Yes	&No\\
+1097153	&746836	&31/08/2016	&C	&Yes	&No\\
+\end{tabular}
+\end{table}
+
+The first task is to replace the notation for continuing appointment ($C$) with a valid date; the $today()$ SAS function will be used here for simplicity.
+Second, a new dataset is created to include one observation for each year of the director's tenure for precise matching.
+Here, the new $TYear$ variable denotes the tenure year of the director.
+The SAS code to achieve this is included at the companion website, and an abridged version of the output is shown in Table~\ref{table:table-years2}.
+
+\begin{table}[h]
+\centering
+\caption{Expanded director profile with annual observations}
+\label{table:table-years2}
+\begin{tabular}{r r r r r }
+&&&&\\
+CompanyID	&DirectorID	&DateStartRole	&DateEndRole	&TYear\\ \hline
+746836	&1097153	&1/01/1983	&18/08/2011	&1983\\
+746836	&1097153	&1/01/1983	&18/08/2011	&1984\\
+746836	&1097153	&1/01/1983	&18/08/2011	&1985\\
+746836	&1097153	&1/01/1983	&18/08/2011	&1986\\
+746836	&1097153	&1/01/1983	&18/08/2011	&1987\\
+\ldots	&\ldots	&\ldots	&\ldots	&\ldots	\\
+746836	&1097153	&28/02/2014	&31/08/2016	&2016\\
+746836	&1097153	&31/08/2016	&31/08/2017	&2016\\
+746836	&1097153	&31/08/2016	&31/08/2017	&2017\\
+\end{tabular}
+\end{table}
+
+In preparing the BoardEx dataset for matching, it is also important to remove duplicates at multiple stages of the process.
+In the first stage, removing all $CompanyID-DirectorID-TYear$ duplicates is desired as those are pure overlapping observations in the sample.
+
+\subsubsection{Year allocation}\label{sec:Year allocation}
+
+As directors transition across role within the calendar year, the next challenge is associating financial performance information with the director's specific appointment.
+For example, a director may have served as non-executive director from the previous year, and appointed Chairman on May 31.
+One approach is to associate the firm's financial performance for this year to the director's chairmanship, given that she spent most of the year in this role.
+The companion code follows this strategy by first calculating the number of days the conflicting appointments were active within the year.
+Next, appointments that are of similar nature are grouped together, such as multiple CEO role announcements.
+
+As shown in the ApptID 1210869-1701082 example, 2014 saw the director appointed three separate times after a 151 days absence.
+These appointments were held for 121, 1, and 91 days respectively.
+A naive process that ranks appointments by the number of days would assign director inactivity to this year as the predominant role (or lack thereof).
+Combining the three active appointments, however, would dominate the 151 day absence and the desired approach is to flag this as an active year for the director.
+Next, data is sorted on ApptID, TYear and descending Days, and finally ApptID-TYear duplicates are removed. 
+
+\textit{Note: include the A\_0\_Input\_03\_02 dataset output for El Nino Ventures as an example.}
+
+In the following example, ... point out 2003 and 2006.
+
+Also, for NED, apptID in('10025-332040'), director was never non-exec long enough to have a dominant year, refer to 
+
+\subsubsection{Further challenges}\label{sec:Challenges}
+
+A practical challenge arises in matching when the director's appointment start or end date is trimmed to the year, as was done with the TYEAR variable above.
+When comparing dates, SAS treats year-only variables as the equivalent of January 1 of that year.
+To illustrate the issue, consider \texttt{CompanyID 1503 and DirectorID eq 378090} where the director's ongoing appointment commenced on January 1, 1986.
+The TYEAR variable would yield firm-year observations for each year starting with 1986.
+However, CRSP coverage for this firm \big(\texttt{CUSIP in('01922210')}\big) commences on January 14, 1992.
+Hence imposing a restriction that TYear falls between the CCM link start and end dates dates would not yield a match for 1992.
+
+For another example, consider (\texttt{CompanyID 2885 and DirectorID eq 36507}) where the director was appointed on July 1, 2001.
+CRSP coverage for this firm \big(\texttt{CUSIP in('00209A10')}\big) commences on July 9, 2001 and ends on January 1, 2002.
+Imposing a restriction that $DateStartRole$ falls between these dates would not yield a match for 2001.
+
+A less restrictive design choice here is to convert the CCM link start date ($LINKDT$) to their year, practically signifying January 1 of the year that CRSP coverage commenced.
+This extends the allowed matches, but may also create duplicate matches that need to be examined.
+The researcher needs to exercise judgement regarding the suitability of this approach for the specific research question.
+Corporate governance studies that examine the role of the board are typically more concerned about the longer term impact of appointments and the proposed approach may be a reasonable compromise.
+Event studies that examine stock returns around director appointment dates are likely to require a more restrictive specification.
+
+
+\subsection{Matching diagnostics}\label{sec:diag}
+
+In the final stages of the matching, it essential to carry out a number of diagnostic steps, which will inevitably vary with the specific research question.
+In this case study scenario, we have obtained merged all possible matches to the original input dataset.
+This step allows us to create a number of diagnostic dummies.
+The first one, $Match\_d$ will take a value of 1 if there is a match in the given TYEAR and zero otherwise.
+This will allow us to remove firms from the sample that do not have any firm-year matching data.
+A matched GVKEY, however, is not not necessarily the primary goal of this exercise.
+The dataset of this stage includes firms with a matched GVKEY, but missing financial data for the given TYear.
+The reasons can be two-fold.
+The firm may have a GVKEY even when financial statement data is unavailable given our target sample of interest; OTC-listed or Canadian firms would be an example for a US-focused study.
+Yet another plausible scenario is a successful GVKEY match for the firm, but coverage only for a subset of the years.
+
+Tiffany \& Co (\texttt{Example\_TIF.sas}) provides an example, where the director was appointed in 1983, but Compustat coverage only commences in 1986.
+A practical solution is to identify the specific time period of interest with an additional dummy.
+
+In replicating \cite{Fahlenbrach2011}, we are interested in CEOs that left their executive roles for a non-executive board position at the firm, but returned as CEO at a later stage.
+While the director at Tifanny \& Co was appointed in 1983, the real period of interest for this study is from 2003: the director's penultimate CEO appointment; his tenure as non-executive chair in 2015-2016 and his return as CEO in 2017.
+Hence a full match can be obtained for the years of interest, missing Compustat observation years notwithstanding.
+
+\section{Caliper widths} \label{sec:Caliper}
+
+Ideally, the researcher would like to have access to financial data for all firm-year combinations that span the tenure of the director.
+In many cases, however, this is not feasible due to financial or security market data in CRSP.
+In determining the firm-year observations required our analysis, our approach is to define various ``caliper widths".
+Building on the earlier \cite{Fahlenbrach2011} example, the first caliper definition nominates our data requirement as the entire tenure of the director as non-executive director, as well as the preceding and following terms as CEO.
+This allows us to develop an understanding of the director's role during their first term as CEO; the firm's financial performance while she was in a non-executive role leading up the the second executive appointment, and finally the second term as CEO.
+
+
+\begin{equation}
+ Caliper_{0} = 1~~~~~\forall~~~Event_{t-1} \leq Appt\_Seq \leq Event_{t+1}
+\label{eq:eq2}
+\end{equation}
+
+where $Appt\_Seq$ is the sequence number of the appointment starting with $1$ for the director's first appointment.
+$Event_{t}$ is the period of interest: here the director's tenure as a non-executive board member.
+It then follows that $Event_{t-1}$ denotes firm-year observations during her preceding CEO appointment, and $Event_{t+1}$ marks years for the subsequent CEO appointment.
+
+A less stringent caliper definition may lead to a larger sample.
+An alternative specification would start with the director's non-executive tenure, but only examine financial data in the leading and trailing financial years around the non-executive appointment.
+
+\end{comment}
+
+
+\section{Conclusions} \label{sec:Conclusions}
+
+\clearpage
+\section{Appendix A} \label{sec:Appendix}
+
+\begin{tabular}{ll}
+\hline \hline 
+Link Type & Descriptions\\ 
+\hline 
+LC & Link based on the CUSIP identifier\\ 
+LK & Link established based on the CIK Code \\ 
+LM & Manually researched match \\ 
+LN & No available link, confirmed by research \\ 
+LX & Link established based on both CUSIP and CIK Code \\ 
+LY & CUSIP or CIK confirmed by manual research \\ 
+\hline \hline 
+\end{tabular} 
+
+\vspace{10mm}
+
+The final matched datasets are available at \href{https://balogh.net/datasets/}{balogh.net/datasets/}.
+
+The SAS code is available via Github at \href{https://github.com/AttilaBalogh/BoardEx}{github.com/AttilaBalogh/BoardEx}.
+
+\clearpage
+
+
+% Bibliography.
+
+\bibliographystyle{jfe}
+\bibliography{library}
+
+
+\end{document}
