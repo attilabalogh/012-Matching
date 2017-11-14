@@ -1,3 +1,5 @@
 
 *.sas7bdat
 *.tex
+*.xlsx
+*.csv

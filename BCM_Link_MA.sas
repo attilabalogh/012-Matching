@@ -6,7 +6,7 @@
 /*  Author       : Attila Balogh, School of Banking and Finance                */
 /*                 UNSW Business School, UNSW Sydney                           */
 /*  Date Created : 15 Oct 2017                                                 */
-/*  Last Modified: 31 Oct 2017                                                 */
+/*  Last Modified: 07 Nov 2017                                                 */
 /*                                                                             */
 /*  Description  : BoardEx data to Comustat GVKEY manual matching step         */
 /*                                                                             */
@@ -17,11 +17,12 @@
 /*                                                                             */
 /*  _________________________________________________________________________  */
 
+%let dataver = 20171030;
 
 /*  NR - No link available, confirmed by research */
 
 data A_13_set_00;
-	set Boardex.Na_dir_profile_emp;
+	set Boardex.Na_dir_profile_emp_&dataver.;
 	rename CompanyID = BoardID;
 	rename CompanyName = BoardName;
 	keep CompanyID CompanyName ;
