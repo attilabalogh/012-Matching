@@ -2,4 +2,8 @@
 *.sas7bdat
 *.xlsx
 *.csv
-Paper/Tables/replace
+*.aux
+*.log
+*.out
+*.pdf
+Paper/Tables/*

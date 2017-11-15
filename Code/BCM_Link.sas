@@ -21,7 +21,7 @@
 /*  Set dataset version to use                                                 */
 
 dm 'log;clear';
-%let dataver = 20171030;
+
 
 /*  Identifying the BoardEx Universe                                           */
 /*  Please refer to separate code                                              */
@@ -54,7 +54,7 @@ dm 'log;clear';
 
 /*  options obs=max;  */
 data A_0_Set_00;
-	set Boardex.Na_wrds_company_names_&dataver. boardex.Na_wrds_company_profile_&dataver.;
+	set Boardex.Na_wrds_company_names boardex.Na_wrds_company_profile;
 	where not missing(BoardID) and (not missing(ISIN) or not missing(Ticker) or not missing(CIKCode));
 	COMP_Cusip = substr(isin,3,9);
 	CRSP_Cusip = substr(isin,3,8);
@@ -104,7 +104,7 @@ run;
 proc sql;
 	create table A_1_Set_02 as
  		select a.*, b.*
-		from A_1_Set_01 (where=(not missing(COMP_Cusip))) a left join comp.names_&dataver. b
+		from A_1_Set_01 (where=(not missing(COMP_Cusip))) a left join comp.names b
 		on a.COMP_Cusip = b.cusip
 		order by BoardName
 	;
@@ -163,7 +163,7 @@ run;
 proc sql;
 	create table A_2_Set_03 as
  		select	a.*, b.*
-		from A_2_Set_02 a left join comp.names_&dataver. b
+		from A_2_Set_02 a left join comp.names b
 		on a.FullCIK = b.cik
 		order by BoardID
 	;
@@ -214,7 +214,7 @@ proc sql;
 	create table A_4_Set_02 as
  		select	a.BoardID, a.BoardName, a.CRSP_CUSIP,
 				b.permno, b.namedt, b.nameendt, b.ncusip, b.comnam
-		from A_4_Set_01 (where=(not missing(CRSP_Cusip))) a, crsp.dsenames_&dataver. b
+		from A_4_Set_01 (where=(not missing(CRSP_Cusip))) a, crsp.dsenames b
 		where a.CRSP_Cusip = b.ncusip
 		order by BoardID, permno, namedt, nameendt
 	;
@@ -311,7 +311,7 @@ run;
 /*  _________________________________________________________________________  */
 
 data A0_Matched_00;
-	set A_13_set_00 Boardex.Na_wrds_company_names_&dataver. boardex.Na_wrds_company_profile_&dataver.;
+	set A_13_set_00 Boardex.Na_wrds_company_names boardex.Na_wrds_company_profile;
 	keep BoardID;
 run;
 
