@@ -281,7 +281,7 @@ run;
 /*  Delete dupliates                                                          */
 
 proc sort data=A_4_Set_04 out=A_4_Set_05 nodupkey ;
-	by BoardID permno namedt;
+	by BoardID permno namedt nameendt;
 quit;
 
 /*  -------------------------------------------------------------------------  */
@@ -369,17 +369,17 @@ run;
 %let dd = %sysfunc(today(), yymmddn8.);
 %put &dd.;
 options dlcreatedir;
-libname BXtoday "C:\Users\Attila Balogh\Dropbox\1-University\Dataset\BCM_Link\&dd." ;
+libname BXtoday "C:\Users\Attila Balogh\Dropbox\1-University\Dataset\012-Matching\&dd." ;
 
-data BCM_Link.Bx_Comp_Link BXtoday.Bx_Comp_Link;
+data BX_Link.Bx_Comp_Link BXtoday.Bx_Comp_Link;
 	set Bx_Comp_Link;
 run;
 
-data BCM_Link.Bx_crsp_link BXtoday.Bx_crsp_link;
+data BX_Link.Bx_crsp_link BXtoday.Bx_crsp_link;
 	set Bx_crsp_link;
 run;
 
-data BCM_Link.Bx_sdc_link BXtoday.Bx_sdc_link;
+data BX_Link.Bx_sdc_link BXtoday.Bx_sdc_link;
 	set Bx_sdc_link;
 run;
 

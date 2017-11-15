@@ -22,7 +22,7 @@
 /*  NR - No link available, confirmed by research */
 
 data A_13_set_00;
-	set Boardex.Na_dir_profile_emp_&dataver.;
+	set Boardexw.Na_dir_profile_emp;
 	rename CompanyID = BoardID;
 	rename CompanyName = BoardName;
 	keep CompanyID CompanyName ;
@@ -32,7 +32,7 @@ proc sort data=A_13_set_00 nodupkey ;
 run;
 
 
-data AB_App_13 BCM_Link.AB_App_13;
+data AB_App_13 BX_Link.AB_App_13;
 	set A_13_set_00;
 /*	set boardex.Na_company_profile_details;*/
 	if BoardID in(15917) then gvkey = '116609';	/*  INFINITY BROADCASTING CORP */

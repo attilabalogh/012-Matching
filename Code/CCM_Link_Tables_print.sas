@@ -46,7 +46,7 @@ quit;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex file="&texpath.\x_1710.tex" (notop nobot) newfile=table;
-proc print data=x_15917 noobs label;
+proc print data=x_1710 noobs label;
 run;
 quit;
 ods tagsets.tablesonlylatex close;

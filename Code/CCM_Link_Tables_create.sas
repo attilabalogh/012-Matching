@@ -53,7 +53,7 @@ run;
 
 /**/
 
-data x_15917_1;
+data x_1710_1;
 	set boardex.Na_wrds_company_names;
 	where BoardID eq 1710;
 	Company_Name = propcase(BoardName); label Company_Name  = "Company Name";
@@ -63,9 +63,9 @@ data x_15917_1;
 	label CIKCode = "CIK Code";
 run;
 proc sql;
-	create table x_15917_2 as
+	create table x_1710 as
  		select a.BoardID, propcase(BoardName) as Company_Name, a.CIKCode, cats(b.gvkey) as GVKEY
-		from x_15917_1 (where=(BoardID eq 1710)) a left join comp.names b
+		from x_1710_1 (where=(BoardID eq 1710)) a left join comp.names b
 		on a.COMP_Cusip = b.cusip
 		order by BoardName
 	;
