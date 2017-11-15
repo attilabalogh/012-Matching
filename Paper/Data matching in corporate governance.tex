@@ -199,13 +199,13 @@ A brief inspection of Apple Inc (BoardID 2355) provides evidence of this phenome
 
 \begin{center}
 Table~\ref{table:table01} Association Between House Prices and NPL Status --- Extended Format\label{table:table01}
-\input{Tables/x_2355}
+\input{Tables/l_2355}
 \end{center}
 
 In addition, companies may have multiple ISIN codes associated with them, as with LegacyTexas Bank (BoardID 872265).
 
 \begin{center}
-\input{Tables/x_872265.tex}
+\input{Tables/l_872265.tex}
 \end{center}
 
 Conversely, many firms in the BoardEx dataset will not be associated with either a ticker symbol, ISIN numbers or CIK Codes.
@@ -217,7 +217,7 @@ Other firm-year observations will provide a BoardID match to CompanyID, but will
 An example is Infinity Broadcasting Corporation (CompanyID and BoardID: 15917), which was listed in 1986, de-listed in 1988, and listed again in 1992 and de-listed in 2001.
 
 \begin{center}
-\input{Tables/x_15917.tex}
+\input{Tables/l_15917.tex}
 \end{center}
 
 Because the only three identifiers available in BoardEx are ISIN, CIK Code and Ticker, CompanyID observations that cannot be matched to the company profile dataset provided by BoardEx will be challenging to match methodically.
@@ -247,7 +247,7 @@ This is expected behavior when companies experience reorganization, such as Prol
 The company's CIK Code remained the same, but both its ISIN and ticker symbols changed, as did its GVKEY in Compustat.
 
 \begin{center}
-\input{Tables/x_1710.tex}
+\input{Tables/l_1710.tex}
 \end{center}
 
 As at November 2017, this affects 41 firms of the 7,476 unique matches.
@@ -278,7 +278,7 @@ This example highlights the importance of the filling up the missing leading dig
 %Another such instance is American Greetings Corp (GVKEY 001468) that is featured under Board identifiers 1833 and 1972036.
 
 \begin{center}
-\input{Tables/x_001045.tex}
+\input{Tables/l_001045.tex}
 \end{center}
 
 Entries matched in this case are identified by the LinkType 'LK' to denote successful CIK Code linking to Compustat.
@@ -329,7 +329,7 @@ Those with two or three associated GVKEYs are often firms with a listed subsidia
 The new firm was assigned individual GVKEY, ticker symbol, CIK Code and CUSIP, but the latter originates from the parent company's six digit core CUSIP.
 
 \begin{center}
-\input{Tables/x_37045V.tex}
+\input{Tables/l_37045V.tex}
 \end{center}
 
 At times, firms undergo a name change or restructuring in their capital structure that warrants a new issue level identifier (CUSIP alphanumeric positions 7 and 8), but not a change in the fundamental issuer-level CUSIP.
@@ -347,7 +347,7 @@ On July 15, 2004, the annual meeting was held; shareholders approved the name ch
 Finally in 2007, the company changed its ticker symbol from HAWK to HK.
 
 \begin{center}
-\input{Tables/x_87054.tex}
+\input{Tables/l_87054.tex}
 \end{center}
 
 Returning to the primary exercise of matching a six-digit CUSIP to a GVKEY, the challenge is illustrated by the final chapter in the Petrohawk Energy story.
@@ -357,7 +357,7 @@ Subsequently, Petrohawk was issued a new CUSIP under the BHP trunk of 088606xxx,
 This example introduces the concept of header and 
 
 \begin{center}
-\input{Tables/x_088606.tex}
+\input{Tables/l_088606.tex}
 \end{center}
 
 

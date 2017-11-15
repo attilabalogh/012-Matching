@@ -17,9 +17,6 @@
 /*                                                                             */
 /*  _________________________________________________________________________  */
 
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_2355.tex" (notop nobot) newfile=table;
-
 data x_2355;
 	set boardex.Na_wrds_company_profile;
 	where BoardID eq 2355;
@@ -32,16 +29,8 @@ data x_2355;
 	label AdvisorName = "Advisor Name";
 	label AdvTypeDesc = "Advisor Type";
 run;
-proc print data=x_2355 noobs label;
-	where BoardID eq 2355;
-	var BoardID Company_Name AdvisorName AdvTypeDesc;
-/*	Title 'Title goes here';*/
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_872265.tex" (notop nobot) newfile=table;
+/**/
 
 data x_872265;
 	set boardex.Na_wrds_company_profile;
@@ -52,16 +41,8 @@ data x_872265;
 	Company_Name = propcase(BoardName); label Company_Name  = "Company Name";
 	label BoardID = "Board ID";
 run;
-proc print data=x_872265 noobs label;
-	where BoardID eq 872265;
-	var BoardID Company_Name ISIN;
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_15917.tex" (notop nobot) newfile=table;
+/**/
 
 data x_15917;
 	set boardex.Na_wrds_company_profile;
@@ -69,21 +50,8 @@ data x_15917;
 	Company_Name = propcase(BoardName); label Company_Name  = "Company Name";
 	label BoardID = "Board ID";
 run;
-proc print data=x_15917 noobs label;
-	where BoardID eq 15917;
-	var BoardID Company_Name ISIN;
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-data examples;
-	array examples[3] (2107, 1748237, 2021732);
-	set boardex.Na_wrds_company_names boardex.Na_wrds_company_profile;;
-	if BoardID in examples then output;
-run;
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_1710.tex" (notop nobot) newfile=table;
+/**/
 
 data x_15917_1;
 	set boardex.Na_wrds_company_names;
@@ -102,13 +70,8 @@ proc sql;
 		order by BoardName
 	;
 quit;
-proc print data=x_15917 noobs label;
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_001045.tex" (notop nobot) newfile=table;
+/**/
 
 data x_A_0_Set_00;
 	set Boardex.Na_wrds_company_names boardex.Na_wrds_company_profile;
@@ -129,7 +92,6 @@ data x_A_2_Set_00;
 	FullCIK = coalescec(NewCIK,CIKCode);
 	drop NewCIK;
 run;
-/*  Remove duplicate entries                                                   */
 proc sort data=x_A_2_Set_00 out=x_A_2_Set_01;
 	by BoardID descending FullCIK;
 run;
@@ -153,14 +115,8 @@ data x_001045;
 	label gvkey = "GVKEY";
 	label CIKCode = "CIK Code";
 run;
-proc print data=x_001045 noobs label;
-	var BoardID Company_Name CIKCode gvkey;
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_87054.tex" (notop nobot) newfile=table;
+/**/
 
 data x_87054;
 	retain permno comnam2 namedt nameendt ncusip naics;
@@ -175,15 +131,8 @@ data x_87054;
 	label naics = "NAICS";
 	keep permno namedt nameendt comnam2 ncusip naics ;
 run;
-proc print data=x_87054 noobs label;
-	run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-/*  BX_SDC_Link.sas */
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_37045V.tex" (notop nobot) newfile=table;
+/**/
 
 data x_37045V;
 	retain gvkey comnam2 tic cusip SDC_Cusip cik year1 year2;
@@ -199,13 +148,8 @@ data x_37045V;
 	label SDC_Cusip = "SDC Cusip";
 	keep gvkey comnam2 tic cusip SDC_Cusip cik;
 run;
-proc print data=x_37045V noobs label;
-run;
-quit;
 
-ods tagsets.tablesonlylatex close;
-
-ods tagsets.tablesonlylatex file="C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables\x_088606.tex" (notop nobot) newfile=table;
+/**/
 
 data x_088606;
 	retain gvkey comnam2 tic cusip SDC_Cusip cik year1 year2;
@@ -222,14 +166,15 @@ data x_088606;
 	label SDC_Cusip = "SDC Cusip";
 	keep gvkey comnam2 tic cusip SDC_Cusip cik;
 run;
-proc print data=x_088606 noobs label;
-	Title 'Compustat Names Table';
-run;
+
+/**/
+
+Proc datasets memtype=data nolist;
+	delete x_a: X_15917_1 X_15917_2;
 quit;
-
-ods tagsets.tablesonlylatex close;
-
-
+proc copy in=work out=BX_Link;
+      select x_: ;
+run;
 
 /*  -------------------------------------------------------------------------  */
 /* *************************  Attila Balogh, 2017  *************************** */
