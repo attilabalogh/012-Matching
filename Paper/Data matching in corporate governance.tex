@@ -158,6 +158,27 @@ This section also also extends the well-known method of CRSP/Compustat matching 
 Section~\ref{sec:manual} explores effective approaches to manual matching, and Section~\ref{sec:years} provides insights into the role of observation years through a brief case study.
 Section~\ref{sec:Conclusions} concludes.
 
+\section{The BoardEx Identifier}\label{sec:BoardID}
+
+BoardEx uses the BoardID variable as a unique firm identifier across its various datasets, with some of them referring to the same identifier as CompanyID.
+The Company Names (Na\_wrds\_company\_names) dataset includes the name, ticker symbol, ISIN and CIK Code identifiers associates with a BoardID.
+The Company Profiles (Na\_wrds\_company\_profile) datasets provides additional information, including firm location, size and number of employees among others.
+It also indicates whether the firm is private, publicly listed, a charity, university, or government organization.
+When firms organizational structure changes, BoardEx assigns a new BoardID to the company.
+
+A case study example is Petrohawk Energy that was acquired by BHP Billiton in 2011, which triggered a BoardID change.
+However, the company continued its financial and management reporting for another two years and hence BoardEx includes comprehensive board composition and senior management profiles for the firm, and Compustat provides financial data.
+Merely matching on the original BoardID, however, the researcher would miss these observations.
+
+\begin{center}
+Table~\ref{table:l_1720679_1} Multiple entries per BoardID\label{table:l_1720679_1}
+\input{Tables/l_1720679_1}
+\end{center}
+
+\begin{center}
+Table~\ref{table:l_1720679_2} Multiple entries per BoardID\label{table:l_1720679_2}
+\input{Tables/l_1720679_2}
+\end{center}
 
 \section{ISIN and CUSIP}\label{sec:ISINCUSIP}
 
@@ -198,8 +219,7 @@ This occurs partially because multiple advisors may be listed under the AdvisorN
 A brief inspection of Apple Inc (BoardID 2355) provides evidence of this phenomenon.
 
 \begin{center}
-
-Table~\ref{table:table01} Multiple entries per BoardID\label{table:table01}
+Table~\ref{table:l_2355} Multiple entries per BoardID\label{table:l_2355}
 \input{Tables/l_2355}
 \end{center}
 
@@ -348,6 +368,7 @@ On July 15, 2004, the annual meeting was held; shareholders approved the name ch
 Finally in 2007, the company changed its ticker symbol from HAWK to HK.
 
 \begin{center}
+Table~\ref{table:l_87054}. CRSP Daily Stock Event Name History for PERMNO 87054\label{table:l_87054}
 \input{Tables/l_87054.tex}
 \end{center}
 
@@ -358,6 +379,7 @@ Subsequently, Petrohawk was issued a new CUSIP under the BHP trunk of 088606xxx,
 This example introduces the concept of header and 
 
 \begin{center}
+Table~\ref{table:l_87054}. Compustat Company Names File for CUSIP 088606\label{table:l_87054}
 \input{Tables/l_088606.tex}
 \end{center}
 

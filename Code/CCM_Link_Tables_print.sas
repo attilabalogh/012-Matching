@@ -17,7 +17,16 @@
 /*                                                                             */
 /*  _________________________________________________________________________  */
 
-%let texpath = &texpath.;
+%let texpath = C:\Users\Attila Balogh\Dropbox\Research\012-Matching\Paper\Tables;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_1720679_1.tex" (notop nobot) newfile=table;
+proc print data=x_1720679_1 noobs label; run; quit;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_1720679_2.tex" (notop nobot) newfile=table;
+proc print data=x_1720679_2 noobs label; run; quit;
+ods tagsets.tablesonlylatex close;
+
 
 ods tagsets.tablesonlylatex file="&texpath.\x_2355.tex" (notop nobot) newfile=table;
 proc print data=x_2355 noobs label;
