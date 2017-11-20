@@ -1,3 +1,55 @@
+
+/*  -------------------------------------------------------------------------  */
+/*       Matching Round 1 - Compustat matching on the CUSIP identifier         */
+/*  _________________________________________________________________________  */
+
+/*  -------------------------------------------------------------------------  */
+/*  Merge Compustat GVKEY to Input file                                        */
+/*  Takes the input dataset and the COMP.names dataset to find a matching      */
+/*  observation for the firm's CUSIP for the specific year of interest         */
+/*  _________________________________________________________________________  */
+
+/*  Remove duplicate entries                                                   */
+
+proc sort data=&INSET. out=A_1_Set_00;
+    by BoardID descending COMP_Cusip;
+run;
+proc sort data=A_1_Set_00 out=A_1_Set_01 nodupkey ;
+    by BoardID COMP_Cusip;
+run;
+
+/*  Matching step                                                              */
+
+proc sql;
+    create table A_1_Set_02 as
+        select a.*, b.*
+        from A_1_Set_01 (where=(not missing(COMP_Cusip))) a left join comp.names b
+        on a.COMP_Cusip = b.cusip
+        order by BoardName
+    ;
+quit;
+
+/*  Delete dupliates                                                          */
+
+proc sort data=A_1_Set_02 out=A_1_Set_03 nodupkey ;
+    by BoardID gvkey;
+quit;
+
+/*  -------------------------------------------------------------------------  */
+/*  Matching round 1 final seteps                                              */
+/*  Save dataset of successfully matched observations                          */
+/*  Create a Match_1 indicator for observations matched in this round          */
+
+%let keepvars = BoardID gvkey BoardName;
+%let keepvars_11 = &keepvars. Match_11;
+
+data AB_App_11;
+    retain &keepvars_11.;
+    set A_1_Set_03;
+    where not missing(gvkey);
+    Match_11 = 1;
+    keep &keepvars_11.;
+run;
 /*  -------------------------------------------------------------------------  */
 /*                                                                             */
 /*               Data matching for corporate governance research               */
@@ -191,7 +243,6 @@ run;
 /*                 Matching Round 3 - Manual Compustat matching                */
 /*  _________________________________________________________________________  */
 
-
 %include "BCM_Link_MA.sas" ;
 
 /*  -------------------------------------------------------------------------  */
@@ -275,7 +326,7 @@ data A_4_Set_04;
 	label permno = "CRSP Permno";
 	label namedt = "CRSP Names Date";
 	label nameendt = "CRSP Names Ending Date";
-	drop comnam BoardName CRSP_CUSIP ncusip;
+/*	drop comnam BoardName CRSP_CUSIP ncusip;*/
 run;
 
 /*  Delete dupliates                                                          */
@@ -301,9 +352,47 @@ data AB_App_21;
 	rename permno=BXpermno namedt=BXnamedt nameendt=BXnameendt;
 run;
 
+/*  -------------------------------------------------------------------------  */
+/*  The final BX CRSP Link dataset                                             */
+
 data BX_CRSP_Link;
 	set AB_App_21;
 	keep BoardID BXpermno BXnamedt BXnameendt LinkType;
+run;
+
+/*  -------------------------------------------------------------------------  */
+/*           Matching Round 5 - CUSIP-based Permno link to Compustat           */
+/*  _________________________________________________________________________  */
+
+/* Reverse from CRSP to GVKEY */
+
+proc sql;
+	create table A_5_set_00 as
+ 		select	a.*, b.*
+		from A_4_set_05 a left join crsp.Ccmxpf_lnkhist b
+		on a.permno = b.lpermno
+		order by BoardID, permno, gvkey, linkprim, liid, linkdt
+	;
+quit;
+
+/*  Because out goal is to find a GVKEY match to a BoardID, we can remove */
+/*  BoardID - GVKEY duplicates. It may leave us with observations BoardID-PERMNO */
+/*  duplicates - they will need to be checed when merging Compustat financial data */
+
+proc sort data=A_5_set_00 out=A_5_set_01 nodupkey ;
+	by BoardID gvkey;
+run;
+
+/*  Create a Match_15 indicator for observations matched in this round          */
+
+%let keepvars_15 = BoardID GVKEY Match_15;
+
+data AB_App_15;
+	retain &keepvars_15.;
+	set A_5_set_01;
+	where not missing(gvkey);
+	Match_15 = 1;
+	keep &keepvars_15.;
 run;
 
 /*  -------------------------------------------------------------------------  */
@@ -319,37 +408,65 @@ proc sort data=A0_Matched_00 out=A0_Matched_00 nodupkey ;
 	by BoardID;
 run;
 
+data BxComp_00;
+	set AB_App_11 AB_App_12 AB_App_13 AB_App_15;
+run;
+proc sort data=BxComp_00;
+	by BoardID descending Match_11-Match_15;
+run;
+
 proc sql;
-	create table BxComp_00 as
- 		select	a.*,
-				b.Match_11, b.gvkey as gvkey_11,
-				c.Match_12, c.gvkey as gvkey_12,
-				d.Match_13, d.gvkey as gvkey_13, d.Match_14,
-			coalesce(gvkey_11,gvkey_12,gvkey_13) as gvkey
-		from A0_Matched_00 a left join AB_App_11 b
-		on a.BoardID = b.BoardID
-		left join AB_App_12 c
-		on a.BoardID = c.BoardID
-		left join AB_App_13 d
-		on a.BoardID = d.BoardID
-		order by BoardID
-		;
+	create table BxComp_01 as
+select	BoardID, GVKEY,
+		max(Match_11) as Match_11,
+		max(Match_12) as Match_12,
+		max(Match_13) as Match_13,
+		max(Match_14) as Match_14,
+		max(Match_15) as Match_15
+	from BxComp_00
+	group by BoardID, GVKEY;
+quit;
+
+data BxComp_02;
+	set BxComp_01;
+	if Match_15=1 and Match_11 ne 1 then Match_N = 1;
+	if Match_15=1 and Match_12 ne 1 then Match_C = 1;
+	if Match_11=1 or Match_12=1 or Match_13=1 then Match_0 = 1;
+	if Match_0 ne 1 and Match_N = 1 then Match_W = 1;
+run;
+
+proc freq data=BxComp_02 ;
+	tables Match_: /out=BxComp_022;
+run;
+
+proc freq data=BxComp_02;
+	tables Breakdown /nocum nofreq nopercent;
+run;
+
+proc sql;
+	select
+		count(Match_13) as Manual_match,
+		count(Match_12) as CIK_match
+	from BxComp_01;
 quit;
 
 %let A0_Matched_02 = BoardID gvkey Linktype Matchpattern Match_1: ;
 
-data BxComp_01;
+data BxComp_02;
 	retain &A0_Matched_02. ;
-	set BxComp_00;
-	Matchpattern = cats(Match_11,Match_12,Match_13,Match_14);
-	if Matchpattern in('1...') then Linktype = 'LC';
-	if Matchpattern in('.1..') then Linktype = 'LK';
-	if Matchpattern in('11..') then Linktype = 'LX';
-	if Matchpattern in('1.1.') or Matchpattern in('.11.') or Matchpattern in('111.') then Linktype = 'LY';
-	if Matchpattern in('....') then Linktype = '';
-	if Matchpattern in('..1.') then Linktype = 'LM';
-	if Matchpattern in('...1') then Linktype = 'LN';
-	if Matchpattern in('....') then delete;
+	set BxComp_01;
+	Matchpattern = cats(Match_11,Match_12,Match_13,Match_14,Match_15);
+	if Matchpattern in('1....') or Matchpattern in('1...1') then Linktype = 'LC';
+	if Matchpattern in('.1...') or Matchpattern in('.1..1') then Linktype = 'LK';
+	if Matchpattern in('11...') or Matchpattern in('11..1') then Linktype = 'LX';
+	if Matchpattern in('1.1..') or Matchpattern in('.11..') or Matchpattern in('111..')
+		or Matchpattern in('1.1.1') or Matchpattern in('.11.1') or Matchpattern in('111.1')
+		then Linktype = 'LY';
+	if Matchpattern in('.....') then Linktype = '';
+	if Matchpattern in('..1..') then Linktype = 'LM';
+	if Matchpattern in('...1.') then Linktype = 'LN';
+	if Matchpattern in('....1') then Linktype = 'LR';
+	if Matchpattern in('.....') then delete;
 	label LinkType = "Link Type";
 	label BoardID = "BoardEx BoardID";
 	label GVKEY = "Compustat GVKEY";
@@ -357,12 +474,12 @@ data BxComp_01;
 	rename GVKEY = BXgvkey;
 run;
 
-proc sort data=BxComp_01;
+proc sort data=BxComp_02;
 	by BoardID;
 run;
 
 data Bx_Comp_Link;
-	set BxComp_01;
+	set BxComp_02;
 	keep BoardID BXgvkey LinkType;
 run;
 

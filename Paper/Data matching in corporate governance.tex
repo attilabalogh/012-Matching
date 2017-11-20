@@ -168,15 +168,17 @@ When firms organizational structure changes, BoardEx assigns a new BoardID to th
 
 A case study example is Petrohawk Energy that was acquired by BHP Billiton in 2011, which triggered a BoardID change.
 However, the company continued its financial and management reporting for another two years and hence BoardEx includes comprehensive board composition and senior management profiles for the firm, and Compustat provides financial data.
-Merely matching on the original BoardID, however, the researcher would miss these observations.
+However, the last header CUSIP in Compustat is the one assigned after the acquisition, whereas the last header CUSIP in BoardEx is from the time before the de-listing.
+First, a CUSIP linking would not yield Compustat data with this approach.
+Second, merely matching on the original BoardID, the researcher would miss board composition observations for firm-years after delisting.
 
 \begin{center}
-Table~\ref{table:l_1720679_1} Multiple entries per BoardID\label{table:l_1720679_1}
+Table~\ref{table:l_1720679_1} Multiple entries in BoardEx\label{table:l_1720679_1}
 \input{Tables/l_1720679_1}
 \end{center}
 
 \begin{center}
-Table~\ref{table:l_1720679_2} Multiple entries per BoardID\label{table:l_1720679_2}
+Table~\ref{table:l_1720679_2} Compustat names index and coverage interval\label{table:l_1720679_2}
 \input{Tables/l_1720679_2}
 \end{center}
 
@@ -254,52 +256,88 @@ In the first steps, all instances of the same firm with multiple identifiers (ei
 
 \section{BoardEx Matching to Compustat}\label{sec:BoardexCOMP}
 
+\subsection{Header and Historic CUSIP}\label{sec:HeaderCUSIP}
+
+Companies may be associated with different CUSIP identifiers over time as they evolve, merge, and issue new securities.
+A design choice employed by many database providers is to use only the latest CUSIP in identifying firms, this is called ``Header CUSIP".
+In contrast, the identifier that was valid at the time of the original data was generated is referred to as the historical CUSIP, or names CUSIP.
+
+The Compustat, BoardEx and SDC company profile datasets all use the header CUSIP, and in many instances this yields the desired match when linking datasets.
+However, when the header CUSIP is the only channel to establish a link between a given BoardID or SDC entry and a GVKEY, there may be missed matches.
+Importantly, because the missed firms share similar characteristics, this will introduce a systematic bias for the researcher's sample.
+
+
+This scenario is illustrated through the history of Petrohawk Energy.
+%CRSP and Compustat index files, SEC 10-K filings, and the Wayback Machine\footnote{https://web.archive.org/web/20060821205016/http://www.petrohawk.com/news/} are studied to understand.
+The company started life as Beta Oil \& Gas, and in December 2003 it announced having entered into an agreement to issue new shares to Petrohawk Energy, LLC.
+This transaction was going to result in a change of control and constituted a reverse merger under NASDAQ rules.
+The transaction was completed on May 25, 2004, the company's common stock began trading the following day.
+A new CUSIP was issued within the range of its original issuer CUSIP.
+
+The company was first classified by NAICS under crude petroleum and natural gas extraction on June 10, 2004.
+Presumably this is the event that triggered the additional entry for that start date in the CRSP name history file. 
+On June 24, 2004, the company announced the date for its annual meeting and the proposed name change to Petrohawk Energy Corporation.
+On July 15, 2004, the annual meeting was held; shareholders approved the name change and reincorporating the company in Delaware.
+Finally in 2007, the company changed its ticker symbol from HAWK to HK.
+While the events are only uncovered through research, these dates are captured in the CRSP event history file, as illustrated below.
+
+\begin{center}\label{table:l_87054}
+Table~\ref{table:l_87054}. CRSP Daily Stock Event Name History for PERMNO 87054
+\input{Tables/l_87054}
+\end{center}
+
+Returning to the primary exercise of matching either a BoardEx header CUSIP or six-digit SDC CUSIP to a GVKEY, the challenge is illustrated by the final chapter in the Petrohawk Energy story.
+On July 15, 2001, BHP Billiton and Petrohawk Energy announced a merger agreement, which was formally concluded when Petrohawk filed a Form 8-K on August 26 with a notice of delisting.
+
+Subsequently, Petrohawk was issued a new CUSIP under the BHP issuer sequence of 088606xxx.
+Compustat then used this new CUSIP to retroactively populate all its records, including the annual fundamentals dataset, which now only show evidence of this final CUSIP.
+As the CUSIP change occurred after the delisting, CRSP, BoardEx, and SDC will not have a record of it for a match.
+
+\begin{center}\label{table:l_088606}
+Table~\ref{table:l_088606}. Compustat Company Names File for CUSIP 088606
+\input{Tables/l_088606}
+\end{center}
+
 \subsection{CUSIP Linking}\label{sec:CUSIPmatch}
 
-The next step involves direct matching of the resulting CUSIP codes utilizing the Compustat Company Names (comp.names) dataset.
-For specific input files (unlike ours seeking a match to all Board identifiers), the researcher needs to ensure that a match is only applied for firm-year observations in the years where the Compustat Names dataset specifically confirms coverage.
+Having derived a nine-digit CUSIP from the BoardEx ISIN, the next step involves direct matching of the resulting CUSIP codes from the Compustat Company Names (comp.names) dataset.
+%For specific input files (unlike ours seeking a match to all Board identifiers), the researcher needs to ensure that a match is only applied for firm-year observations in the years where the Compustat Names dataset specifically confirms coverage.
 
 The BoardEx North American dataset contains Canadian firms as well as firms listed in the United States.
 If the original BoardEx input dataset did not filter for firms listed in the US, this matching step will return numerous missing matches.
 A brief visual inspection can reveal whether the non-matched entries bear the 'CA' designation in the ISIN, indicating that the firm is listed in Canada.
 
-There will also be duplicates in the dataset, where one BoardID is matched to multiple Gvkeys.
+There will also be duplicates in the dataset, where one BoardID is matched to multiple GVKEYs.
 This is expected behavior when companies experience reorganization, such as Prologis Inc (Board ID 1710) that was called AMB Property Inc prior to 2011.
 The company's CIK Code remained the same, but both its ISIN and ticker symbols changed, as did its GVKEY in Compustat.
-
-\begin{center}
-\input{Tables/l_1710.tex}
-\end{center}
-
 As at November 2017, this affects 41 firms of the 7,476 unique matches.
 
-Nevertheless, there may be US-listed firms that remain unmatched in this dataset that may have corresponding entries in Compustat.
-They will be matched in subsequent stages using alternative identifiers.
+\begin{center}
+Table~\ref{table:l_1710}. Multiple GVKEYs for the same Board IDs and CIK\label{table:l_1710}
+\input{Tables/l_1710}
+\end{center}
 
-Entries matched in this case are identified by the LinkType 'LC' to denote successful CUSIP linking to Compustat.
+Entries matched in this step are identified by the LinkType 'LC' in the BoardEx-Compustat Link (bx\_comp\_link) dataset to denote successful CUSIP linking to Compustat.
 
 \subsection{CIK Code Linking}\label{sec:CIKmatch}
 
-In addition to CUSIP, BoardEx company profiles may also list the CIK Code for many firms: as at Novermber 2017, the North American dataset includes 11,867 unique entries in total.
-CIK is the abbreviation for Central Index Key, and it may identify individuals as well as firms.
-It is the main identifier in the EDGAR database, the SEC's Electronic Data Gathering, Analysis, and Retrieval system.
+In addition to CUSIP, BoardEx company profiles may also list a Central Index Key for firms: as at Novermber 2017, the North American dataset includes 11,867 unique entries in total.
+Abbreviated CIK, it is the main identifier in the EDGAR database, the SEC's Electronic Data Gathering, Analysis, and Retrieval system.
 
 A visual inspection of the CIK variable in BoardEx reveals that the length of the identifier is shorter than the prescribed ten digits for many observations.
 This is easily managed by filling the missing digits by leading zeros in the dataset.
 
-Here, and in all subsequent stages, matching is carried out on the original dataset instead of the subset of observations that remain unmatched.
-This strategy will later allow to assess the strength of the match based on the number of approaches that resulted in a successful merge.
-
 This matching step also yields duplicates.
-Whereas in the CUSIP matching step a single board identifier was associated with multiple company keys; here a single key may be matched to multiple BoardEx entries.
+Whereas in the CUSIP matching step a single board identifier was associated with multiple company keys; here a single CIK may be matched to multiple BoardEx entries.
 As at November 2017, 8,895 of the unique matches cover 9,297 Board identifiers.
 This phenomenon may stem from coding inconsistencies in the BoardEx database, where the same entry is assigned multiple identifiers.
 A prominent example is American Airlines (GVKEY 001045), listed under BoardEx IDs 2107, 1748237, and 2021732.
-This example highlights the importance of the filling up the missing leading digits for the CIK Code, which is originally recorded by BoardEx across the three observations as 6201, 06201 and finally 0000006201.
+This example highlights the importance of the filling up the missing leading digits for the CIK Code, which is originally recorded by BoardEx across the three observations as 6201, 06201 and 0000006201.
 %Another such instance is American Greetings Corp (GVKEY 001468) that is featured under Board identifiers 1833 and 1972036.
 
 \begin{center}
-\input{Tables/l_001045.tex}
+Table~\ref{table:l_001045}. Multiple Board IDs for the same firm\label{table:l_001045}
+\input{Tables/l_001045}
 \end{center}
 
 Entries matched in this case are identified by the LinkType 'LK' to denote successful CIK Code linking to Compustat.
@@ -319,22 +357,26 @@ The code includes methods to obtain summary statistics to inspect the success of
 
 \subsection{CUSIP Linking}\label{sec:CRSPCUSIPmatch}
 
-Having created the nine-digit CUSIP variable from the BoardEx ISIN, the next step involves the process of matching CUSIPs to a CRSP PERMNO, prior to matching the resulting PERMNO to Compustat's GVKEY.
+Having created the nine-digit CUSIP variable from the BoardEx ISIN, the next step involves the process of matching CUSIPs to a PERMNO for linking to CRSP datasets.
+As noted earlier, the CUSIP identifier may change over time when the name of the company or its capital structure changes.
+In the CRSP databases CUSIP Header denotes the current CUSIP for each firm, and historical CUSIPs are also maintained with corresponding time intervals.
 
-In this setting, the appropriate matching is to the PERMNO variable in CRSP, as it identifies the issue, whereas PERMCO identifies the company.
-Accordingly, PERMCO is the larger set and may include multiple PERMNOs, whereas one PERMNO can only belong to one PERMCO.
+This feature will be exploited to address the shortcoming of the CUSIP to GVKEY match discussed previously.
+Specifically, with the benefit of
+
+, prior to matching the resulting PERMNO to Compustat's GVKEY.
+
+
+%In this setting, the appropriate matching is to the PERMNO variable in CRSP, as it identifies the issue, whereas PERMCO identifies the company.
+%Accordingly, PERMCO is the larger set and may include multiple PERMNOs, whereas one PERMNO can only belong to one PERMCO.
 
 For the PERMNO matching, the appropriate dataset is the CRSP Daily Stock Event Name History (dsenames).
 In this matching, note that the CRSP dataset uses an eight-digit CUSIP vis-\`{a}-vis the nine-digit identifier in BoardEx originally obtained in Section~\ref{sec:ISINCUSIP}.
 
-The CUSIP identifier may change over time when the name of the company or its capital structure changes.
-In the CRSP databases CUSIP Header denotes the current CUSIP for each firm, and historical CUSIP is kept in the crsp.dsenames dataset with corresponding time intervals.
-This historical CUSIP (NCUSIP) variable is missing for firm years prior to 1968; that is when the American Bankers Association set up the CUSIP Service Bureau through its Committee on Uniform Security Identification Procedures (CUSIP).
 
 
-%This dataset also includes a ticker symbol that may be used for an additional matching step.
-%The two matches have now yielded two datasets that matches BoardEx data to CRSP's PERMCO identifier.
-%The next step is to match this identifier to Compustat's GVKEY.
+%This historical CUSIP (NCUSIP) variable is missing for firm years prior to 1968; that is when the American Bankers Association set up the CUSIP Service Bureau through its Committee on Uniform Security Identification Procedures (CUSIP).
+
 
 It is important to note that the original CCM Linktable linking dataset provided by WRDS (ccmxpf\_linktable) has now been deprecated.
 While it continues to be available, the appropriate database to use is the CCM Xpressfeed Linking History (ccmxpf\_lnkhist) dataset provided by CRSP.
@@ -355,43 +397,46 @@ The new firm was assigned individual GVKEY, ticker symbol, CIK Code and CUSIP, b
 
 At times, firms undergo a name change or restructuring in their capital structure that warrants a new issue level identifier (CUSIP alphanumeric positions 7 and 8), but not a change in the fundamental issuer-level CUSIP.
 
-The story of Petrohawk Energy is told by the CRSP and Compustat index files and 10-K submissions, with the help of the Wayback Machine\footnote{https://web.archive.org/web/20060821205016/http://www.petrohawk.com/news/}.
-The company started life as Beta Oil \& Gas, and in December 2003 it announced having entered into an agreement to issue new shares to Petrohawk Energy, LLC for \$60,000,000.
-This transaction was going to result in a change of control and constituted a reverse merger under NASDAQ rules.
-The transaction was completed on May 25, 2004, the company's common stock began trading the following day.
-A new CUSIP was issued within the range of its original issuer CUSIP.
-
-The company was first classified by NAICS under crude petroleum and natural gas extraction on June 10, 2004.
-Presumably this is the event that triggered the additional entry. 
-On June 24, 2004, the company announced the date for its annual meeting and the proposed name change to Petrohawk Energy Corporation.
-On July 15, 2004, the annual meeting was held; shareholders approved the name change and reincorporating the company in Delaware.
-Finally in 2007, the company changed its ticker symbol from HAWK to HK.
-
-\begin{center}
-Table~\ref{table:l_87054}. CRSP Daily Stock Event Name History for PERMNO 87054\label{table:l_87054}
-\input{Tables/l_87054.tex}
-\end{center}
-
-Returning to the primary exercise of matching a six-digit CUSIP to a GVKEY, the challenge is illustrated by the final chapter in the Petrohawk Energy story.
-On July 15, 2001, BHP Billiton and Petrohawk Energy announced a merger agreement, which was formally concluded when Petrohawk filed a Form 8-K on August 26 with a notice of delisting.
-
-Subsequently, Petrohawk was issued a new CUSIP under the BHP trunk of 088606xxx, and Compustat's records only show evidence of this final CUSIP.
-This example introduces the concept of header and 
-
-\begin{center}
-Table~\ref{table:l_87054}. Compustat Company Names File for CUSIP 088606\label{table:l_87054}
-\input{Tables/l_088606.tex}
-\end{center}
-
-
-
-
-%COMMENT
-\begin{comment}
 
 \subsection{CRSP/Compustat Linking}\label{sec:CCM}
 
 The primary role of the Compustat CRSP Matching (CCM) dataset is to provide a link between financial statement and security prices data.
+Matching steps between CRSP and Compustat are established and well documented in the literature and technical documents.
+This section will highlight instances that may be of particular interest to researchers in corporate governance.
+
+As a starting point, it is useful to develop an understanding of how Compustat and CRSP are related, illustrated here through examples of overlapping links between the two.
+
+A single Compustat GVKEY may be linked to multiple CRSP PERMNOs and conversely, one CRSP identifier could point to multiple GVKEYs over time.
+An example of the former is not challenging to find, given the well-known phenomenon of firms issuing multiple securities, including listed subsidiaries.
+Comcast is just one of the many examples, where a single reporting entity identified by a unique Compustat GVKEY is associated with multiple CRSP PERMNOs.
+The different CUSIP headers and the overlapping time periods provide additional support that the different PERMNOs do not merely reflect a temporal evolution of the firm's securities.
+
+\begin{center}
+Table~\ref{table:l_003226}. Comcast traded securities\label{table:l_003226}
+\input{Tables/l_003226}
+\end{center}
+
+
+To demonstrate how GVKEYs change over time for listed firms, consider the example of Axonyx that was acquired in a reverse merger by TorreyPines Therapeutics in 2006.
+Three years later TorreyPines merged with Raptor Pharmaceuticals.
+While it was NASDAQ-listed TorreyPines that merged Raptor into a wholly-owned subsidiary, the name of the holding company was changed to Raptor and symbol to RTPT.
+
+\begin{center}
+Table~\ref{table:l_88148}. CRSP Daily Stock Event Name History for PERMNO 88148\label{table:l_88148}
+\input{Tables/l_88148}
+\end{center}
+
+While the Compustat index file shows that financial data is available for TorreyPines between 2002 and 2008, full financials are only available for the years while the firm traded under the TPTX symbol.
+The only relevant years in the Compustat dataset are 2006 to 2008, after the Axonyx and prior to the Raptor mergers.
+
+\begin{center}
+Table~\ref{table:l_109823}. Compustat Company Names File for PERMNO 88148\label{table:l_109823}
+\input{Tables/l_109823}
+\end{center}
+
+%COMMENT
+\begin{comment}
+
 Accordingly, the CCM linking history file provides information on the start and end dates for which a certain GVKEY has a corresponding PERMNO and PERMCO identifier.
 In the specific case when the primary goal is to identify a GVKEY to match financial data to the BoardEx database, some of the restrictions of the CCM design may be relaxed.
 Using the CCM dataset to match GVKEY effectively, the start and end dates for the effective Compustat-CRSP link are less relevant.
@@ -400,7 +445,7 @@ The CCM reverse lookup technique incorporates four distinct approaches.
 The first will employ BoardEX CUSIP in first matching to a CRSP PERMNO, which will in turn be matched to a GVKEY based on the validity interval provided by CCM Linkhist.
 
 When a GVKEY match is identified for a PERMNO for a given period, the search may be extended on the comp.names dataset to test whether the identified GVKEY is valid for a period outside the Compustat-CRSP effective dates.
-This will me the second method, and the number of matches will vary.
+This will be the second method, and the number of matches will vary.
 
 Overall, the second approach is considered more robust and will be assigned higher priority, because the comp.names interval dates refer to data that is specific to Compustat.
 By contrast, interval dates in CCM Linkhist refer to matches between PERMCO / GVKEY associations, which is more indirect.
@@ -435,8 +480,6 @@ In order to ensure that only one of the observations are kept, I assign a prefer
 The observations are then sorted on CompanyID and TYEAR in ascending order and on this preference number (\textit{LPID}) in descending order.
 Next, SAS is instructed to remove duplicates of CompanyID and TYEAR pairs.
 Given the reverse sorting on LPID, observations with \textit{'P'} will be kept over observations with any of the other other markers.
-
-\footnote{\url{https://wrds-web.wharton.upenn.edu/wrds/tools/variable.cfm?library_id=137&file_id=66980}}
 
 
 \end{comment}
@@ -598,20 +641,10 @@ An alternative specification would start with the director's non-executive tenur
 \clearpage
 \section{Appendix A} \label{sec:Appendix}
 
-\begin{tabular}{ll}
-\hline \hline 
-Link Type & Descriptions\\ 
-\hline 
-LC & Link based on the CUSIP identifier\\ 
-LK & Link established based on the CIK Code \\ 
-LM & Manually researched match \\ 
-LN & No available link, confirmed by research \\ 
-LX & Link established based on both CUSIP and CIK Code \\ 
-LY & CUSIP or CIK confirmed by manual research \\ 
-\hline \hline 
-\end{tabular} 
-
-\vspace{10mm}
+\begin{center}
+Table~\ref{table:l_stats}. Yield rates by link type\label{table:l_stats}
+\input{Tables/l_stats}
+\end{center}
 
 The final matched datasets are available at \href{https://balogh.net/datasets/}{balogh.net/datasets/}.
 

@@ -61,10 +61,7 @@ quit;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex file="&texpath.\x_001045.tex" (notop nobot) newfile=table;
-proc print data=x_001045 noobs label;
-	var BoardID Company_Name CIKCode gvkey;
-run;
-quit;
+proc print data=x_001045 noobs label;run;quit;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex file="&texpath.\x_87054.tex" (notop nobot) newfile=table;
@@ -81,10 +78,26 @@ ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex file="&texpath.\x_088606.tex" (notop nobot) newfile=table;
 proc print data=x_088606 noobs label;
-	Title 'Compustat Names Table';
 run;
 quit;
 ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_88148.tex" (notop nobot) newfile=table;
+proc print data=x_88148 noobs label;run;quit;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_109823.tex" (notop nobot) newfile=table;
+proc print data=x_109823 noobs label;run;quit;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_003226.tex" (notop nobot) newfile=table;
+proc print data=x_003226 noobs label;run;quit;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex file="&texpath.\x_stats.tex" (notop nobot) newfile=table;
+proc print data=x_stats noobs label;run;quit;
+ods tagsets.tablesonlylatex close;
+
 
 
 

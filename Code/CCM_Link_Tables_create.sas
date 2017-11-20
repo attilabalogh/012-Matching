@@ -17,6 +17,60 @@
 /*                                                                             */
 /*  _________________________________________________________________________  */
 
+/*  Petrohawk multiple BoardIDs*/
+
+%let keep = BoardID Company_Name CIKCode COMP_Cusip OrgType;
+data x_1720679_1;
+	retain &keep.;
+	set boardex.Na_wrds_company_profile;
+	where (BoardID = 1720679) or (BoardID = 637778);
+	if BoardID eq 872265 then BoardName = 'LEGACYTEXAS FINANCIAL GROUP INC';
+	Company_Name = propcase(BoardName); label Company_Name  = "Board Name";
+	if Company_Name in('Petrohawk Energy Corp (Beta Oil & Gas Prior To 07/2004) (De-Listed 08/2011)') then Company_Name = "Petrohawk Energy (De-Listed 08/2011)";
+	if Company_Name in('Petrohawk Energy Corp') then Company_Name = "Petrohawk Energy";
+	label BoardID = "Board ID";
+	COMP_Cusip = substr(isin,3,9);
+	label COMP_Cusip = "CUSIP";
+	label CIKCode = "CIK";
+	label OrgType = "Type";
+	keep &keep.;
+run;
+
+%let keep = gvkey comnam2 cik cusip year1 year2;
+data x_1720679_2;
+	retain &keep.;
+	set comp.names;
+	where gvkey in('121934');
+	comnam2 = propcase(conm);
+	label comnam2 = "Company Name";
+	label year1 = "Start";
+	label year2 = "End";
+	label gvkey = "GKEY";
+	label CIK = "CIK";
+	label tic = "Ticker";
+	keep &keep.;
+run;
+
+/*  CRSP Collapse example */
+
+data x_001045_20;
+	set crsp.Ccmxpf_lnkhist ;
+/*	where gvkey in('001045');*/
+	label lpermno = "PERMNO";
+	label lpermco = "PERMCO";
+	label gvkey = "GVKEY";
+	label linkdt = "Link Start";
+	label linkenddt = "Link End";
+	label linkprim = "Primary";
+	label liid = "Link ID";
+	label linktype = "Type";
+run;
+proc sort data=x_001045_20;
+	by gvkey lpermno lpermco linkdt linkenddt;
+run;
+
+/**/
+
 data x_2355;
 	set boardex.Na_wrds_company_profile;
 	where BoardID eq 2355;
@@ -106,14 +160,18 @@ proc sql;
 		order by BoardID
 	;
 quit;
+
+%let keep = BoardID Company_Name CIKCode gvkey;
 data x_001045;
+	retain &keep.;
 	set x_A_2_Set_03;
 	where GVKEY in('001045');
 	if BoardID eq 2021732 then BoardName = 'AMERICAN AIRLINES GROUP INC ';
 	Company_Name = propcase(BoardName); label Company_Name  = "Company Name";
 	label BoardID = "Board ID";
 	label gvkey = "GVKEY";
-	label CIKCode = "CIK Code";
+	label CIKCode = "CIK";
+	keep &keep.;
 run;
 
 /**/
@@ -130,6 +188,62 @@ data x_87054;
 	label nameendt = "End Date";
 	label naics = "NAICS";
 	keep permno namedt nameendt comnam2 ncusip naics ;
+run;
+
+/*  Axonyx one permno multiple gvkey */
+
+%let keep = permno comnam2 namedt nameendt ticker;
+data x_88148;
+	retain &keep.;
+	format namedt MMDDYY10.;
+	format nameendt MMDDYY10.;
+	set crsp.dsenames;
+	where permno eq 88148;
+	comnam2 = propcase(comnam);
+	label comnam2 = "Company Name";
+	label namedt = "Start Date";
+	label nameendt = "End Date";
+	label naics = "NAICS";
+	keep &keep.;
+run;
+
+%let keep = gvkey PERMNO comnam2 tic cusip year1 year2;
+data x_109823;
+	retain &keep.;
+	set comp.names;
+	where gvkey in('109823','161088','175660');
+	comnam2 = propcase(conm);
+	PERMNO = 88148;
+	label comnam2 = "Company Name";
+	label year1 = "Start";
+	label year2 = "End";
+	label gvkey = "GKEY";
+	label tic = "Ticker";
+	keep &keep.;
+run;
+proc sort data=x_109823;
+	by year1;
+run;
+
+
+/*  Comcast one gvkey multiple permno */
+
+%let keep = permno comnam2 namedt nameendt ticker cusip;
+data x_003226;
+	retain &keep.;
+	format namedt MMDDYY10.;
+	format nameendt MMDDYY10.;
+	set crsp.dsenames;
+	where permno in(11997,25022,89525);
+	comnam2 = propcase(comnam);
+	label comnam2 = "Company Name";
+	label namedt = "Start Date";
+	label nameendt = "End Date";
+	label naics = "NAICS";
+	keep &keep.;
+run;
+proc sort data=x_003226;
+	by permno namedt;
 run;
 
 /**/
@@ -165,6 +279,30 @@ data x_088606;
 	label tic = "Ticker";
 	label SDC_Cusip = "SDC Cusip";
 	keep gvkey comnam2 tic cusip SDC_Cusip cik;
+run;
+
+/*  Final Stats*/
+
+
+proc freq data=BX_Link.Bx_Comp_Link;
+	tables LinkType /noprint out=x_stats_00;
+run;
+%let keep = linktype Desc count;
+data x_stats;
+	retain &keep.;
+	format count comma12.;
+	format Desc $50.;
+	set x_stats_00;
+	label count = "Matches";
+	label Desc = "Description";
+	if Linktype in('LC') then Desc = "Link based on the CUSIP identifier";
+	if Linktype in('LK') then Desc = "Link established based on the CIK Code";
+	if Linktype in('LM') then Desc = "Manually researched match";
+	if Linktype in('LN') then Desc = "No available link, confirmed by research";
+	if Linktype in('LR') then Desc = "Match through CRSP Permno";
+	if Linktype in('LX') then Desc = "Link established based on both CUSIP and CIK Code";
+	if Linktype in('LY') then Desc = "CUSIP or CIK confirmed by manual research";
+	keep &keep.;
 run;
 
 /**/
