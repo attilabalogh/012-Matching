@@ -17,6 +17,36 @@
 /*                                                                             */
 /*  _________________________________________________________________________  */
 
+/*  Step 1 - generate 6-digit CUSIP from  Compustat 9-digit CUSIP */
+
+data SDC_GVKEY_00;
+	set comp.names;
+	SDC_Cusip = substr(cusip,1,6);
+run;
+
+/*  Step 2 - Use SDC Names dataset with non-missing CUSIP and match to Compustat Names index  */
+
+proc sql;
+	create table SDC_GVKEY_01 as
+ 		select a.*, b.*
+		from sdc.ma_names (where=(not missing(cusip))) a left join SDC_GVKEY_00 b
+		on a.cusip = b.SDC_Cusip;
+quit;
+
+/* Step 3 - Remove entries with no match */
+
+data SDC_GVKEY_02;
+	set SDC_GVKEY_01;
+	where not missing(gvkey);
+	drop SDC_Cusip;
+run;
+
+
+/*  -------------------------------------------------------------------------  */
+/*  OLD */
+
+
+
 /*  Step 1: Establish that the GVKEY-CUSIP match is unique                     */
 
 proc freq data=comp.names;
@@ -55,6 +85,7 @@ create table cusip_duplicates_02 as
 		order by count descending, SDC_Cusip;
 quit;
 
+/*  Visual data checking steps - ignore */
 
 data petro;
 	set comp.names;

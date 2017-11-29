@@ -1,55 +1,3 @@
-
-/*  -------------------------------------------------------------------------  */
-/*       Matching Round 1 - Compustat matching on the CUSIP identifier         */
-/*  _________________________________________________________________________  */
-
-/*  -------------------------------------------------------------------------  */
-/*  Merge Compustat GVKEY to Input file                                        */
-/*  Takes the input dataset and the COMP.names dataset to find a matching      */
-/*  observation for the firm's CUSIP for the specific year of interest         */
-/*  _________________________________________________________________________  */
-
-/*  Remove duplicate entries                                                   */
-
-proc sort data=&INSET. out=A_1_Set_00;
-    by BoardID descending COMP_Cusip;
-run;
-proc sort data=A_1_Set_00 out=A_1_Set_01 nodupkey ;
-    by BoardID COMP_Cusip;
-run;
-
-/*  Matching step                                                              */
-
-proc sql;
-    create table A_1_Set_02 as
-        select a.*, b.*
-        from A_1_Set_01 (where=(not missing(COMP_Cusip))) a left join comp.names b
-        on a.COMP_Cusip = b.cusip
-        order by BoardName
-    ;
-quit;
-
-/*  Delete dupliates                                                          */
-
-proc sort data=A_1_Set_02 out=A_1_Set_03 nodupkey ;
-    by BoardID gvkey;
-quit;
-
-/*  -------------------------------------------------------------------------  */
-/*  Matching round 1 final seteps                                              */
-/*  Save dataset of successfully matched observations                          */
-/*  Create a Match_1 indicator for observations matched in this round          */
-
-%let keepvars = BoardID gvkey BoardName;
-%let keepvars_11 = &keepvars. Match_11;
-
-data AB_App_11;
-    retain &keepvars_11.;
-    set A_1_Set_03;
-    where not missing(gvkey);
-    Match_11 = 1;
-    keep &keepvars_11.;
-run;
 /*  -------------------------------------------------------------------------  */
 /*                                                                             */
 /*               Data matching for corporate governance research               */
@@ -58,7 +6,7 @@ run;
 /*  Author       : Attila Balogh, School of Banking and Finance                */
 /*                 UNSW Business School, UNSW Sydney                           */
 /*  Date Created : 15 Oct 2017                                                 */
-/*  Last Modified:  7 Nov 2017                                                 */
+/*  Last Modified: 21 Nov 2017                                                 */
 /*                                                                             */
 /*  Description  : Link BoardEx data to Comustat GVKEY and CRSP PERMNO         */
 /*                                                                             */
