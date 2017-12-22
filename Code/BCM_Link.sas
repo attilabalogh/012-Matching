@@ -6,7 +6,7 @@
 /*  Author       : Attila Balogh, School of Banking and Finance                */
 /*                 UNSW Business School, UNSW Sydney                           */
 /*  Date Created : 15 Oct 2017                                                 */
-/*  Last Modified: 21 Nov 2017                                                 */
+/*  Last Modified: 22 Dec 2017                                                 */
 /*                                                                             */
 /*  Description  : Link BoardEx data to Comustat GVKEY and CRSP PERMNO         */
 /*                                                                             */
@@ -22,6 +22,7 @@
 
 dm 'log;clear';
 
+libname boardex "G:\Datasets\BoardEx\20171107";
 
 /*  Identifying the BoardEx Universe                                           */
 /*  Please refer to separate code                                              */
@@ -112,7 +113,7 @@ quit;
 
 /*  Delete dupliates                                                          */
 
-proc sort data=A_1_Set_02 out=A_1_Set_03 nodupkey ;
+proc sort data=A_1_Set_02 out=A_1_Set_03 nodupkey;
 	by BoardID gvkey;
 quit;
 
@@ -428,16 +429,32 @@ run;
 
 data Bx_Comp_Link;
 	set BxComp_02;
-	keep BoardID BXgvkey LinkType;
+	if LinkType = 'LX' then LinkPriority = 1;
+	if LinkType = 'LC' then LinkPriority = 2;
+	if LinkType = 'LK' then LinkPriority = 3;
+	if LinkType = 'LM' then LinkPriority = 4;
+	if LinkType = 'LY' then LinkPriority = 5;
+	if LinkType = 'LR' then LinkPriority = 6;
+	keep BoardID BXgvkey LinkType LinkPriority;
+run;
+
+proc sort data=Bx_Comp_Link (where=(not missing(BXgvkey))) out=Bx_Comp_Link_unq;
+	by BXgvkey LinkPriority BoardID;
+run;
+proc sort data=Bx_Comp_Link_unq nodupkey;
+	by BXgvkey;
 run;
 
 %let dd = %sysfunc(today(), yymmddn8.);
 %put &dd.;
 options dlcreatedir;
-libname BXtoday "C:\Users\Attila Balogh\Dropbox\1-University\Dataset\012-Matching\&dd." ;
+libname BXtoday "C:\Users\Attila Balogh\Dropbox\Datasets\012-Matching\&dd." ;
 
 data BX_Link.Bx_Comp_Link BXtoday.Bx_Comp_Link;
 	set Bx_Comp_Link;
+run;
+data BX_Link.Bx_Comp_Link_unq BXtoday.Bx_Comp_Link_unq;
+	set Bx_Comp_Link_unq;
 run;
 
 data BX_Link.Bx_crsp_link BXtoday.Bx_crsp_link;
