@@ -6,7 +6,7 @@
 /*  Author       : Attila Balogh, School of Banking and Finance                */
 /*                 UNSW Business School, UNSW Sydney                           */
 /*  Date Created : 15 Oct 2017                                                 */
-/*  Last Modified: 22 Dec 2017                                                 */
+/*  Last Modified: 22 Mar 2018                                                 */
 /*                                                                             */
 /*  Description  : BoardEx data to Comustat GVKEY manual matching step         */
 /*                                                                             */
@@ -206,6 +206,19 @@ data AB_App_13 BX_Link.AB_App_13;
 	if BoardID in(1096090) then gvkey = '116591';	/*	ALTURAS MINERALS CORP  */
 	if BoardID in(1056054) then Match_14 = 1;	/*	ARMOR DESIGNS INC (De-listed 01/2015)  */
 	if BoardID in(33410) then gvkey = '011450';	/*	WESTWOOD ONE INC (De-listed 11/2008)  */
+/* March 21 2018 */
+	if BoardID in(876814) then gvkey = '028862';	/*	CALIAN GROUP LTD (Calian Technologies Ltd prior to 04/2016)  */
+
+/* March 22 2018 - Compustat identifies this firm as Pacwest Bancorp, which is incorrect */
+	if BoardID in(23646) then gvkey = '125860';	/*	PAC-WEST TELECOMM INC (De-listed 12/2007)  */
+
+
+/*	Confirmed missing link on 11/23/2017 - two new */
+	if BoardID in(25024) then NR = 1;			/*	PRICER AB */
+	if BoardID in(2017510) then NR = 1;			/*	TOSE CO LTD */
+
+/* March 22 2018 - Compustat identifies US LEC as PAETEC, the company it merged into, which is incorrect */
+	if BoardID in(31979) then gvkey = '109929';	/*	US LEC CORP (De-listed 02/2007)  */
 
 	if not missing(gvkey) then Match_13 = 1;
 	if ((Match_13 ne 1) and (Match_14 ne 1)) then delete;

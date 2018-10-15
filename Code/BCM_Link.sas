@@ -6,7 +6,7 @@
 /*  Author       : Attila Balogh, School of Banking and Finance                */
 /*                 UNSW Business School, UNSW Sydney                           */
 /*  Date Created : 15 Oct 2017                                                 */
-/*  Last Modified: 22 Dec 2017                                                 */
+/*  Last Modified: 21 Mar 2018                                                 */
 /*                                                                             */
 /*  Description  : Link BoardEx data to Comustat GVKEY and CRSP PERMNO         */
 /*                                                                             */
@@ -22,7 +22,7 @@
 
 dm 'log;clear';
 
-libname boardex "G:\Datasets\BoardEx\20171107";
+libname boardex "e:\Datasets\BoardEx\20180107";
 
 /*  Identifying the BoardEx Universe                                           */
 /*  Please refer to separate code                                              */
